@@ -21,12 +21,12 @@ namespace Firebird2Sql
             InitializeComponent();
             textBoxUsu.Text = "SYSDBA";
             textBoxSenha.Text = "masterkey";
-            textBoxDatabase.Text = "C:\\Marília\\Dados\\CARGAS32.GDB";
+            textBoxDatabase.Text = "C:\\Marilia\\Dados\\CARGAS32.GDB";
             textBoxIP.Text = "127.0.0.1";
             textBoxPorta.Text = "3050";
             //sqlserver
-            txtDatabaseSql.Text = "Cargas32";
-            txtServerSql.Text =".\\SqlExpress"; //"(LocalDb)\\v11.0";
+            txtDatabaseSql.Text = "cargas";
+            txtServerSql.Text = "(LocalDb)\\v11.0"; //".\\SqlExpress"; //
 
         }
 
@@ -34,12 +34,7 @@ namespace Firebird2Sql
         private List<string> RecuperaTabelasFB()
         {
 
-            var connectStringBuilder = new FbConnectionStringBuilder();
-            connectStringBuilder.UserID = textBoxUsu.Text;
-            connectStringBuilder.Password = textBoxSenha.Text;
-            connectStringBuilder.Database = textBoxDatabase.Text;
-            connectStringBuilder.DataSource = textBoxIP.Text;
-            connectStringBuilder.Port = int.Parse(textBoxPorta.Text);
+            var connectStringBuilder = FbConnectionStringBuilder();
             var listaTabelas = new List<string>();
 
             try
@@ -53,9 +48,10 @@ namespace Firebird2Sql
                         fbQuery.Connection = conexao;
                         fbQuery.CommandText = "SELECT RDB$RELATION_NAME FROM RDB$RELATIONS WHERE RDB$SYSTEM_FLAG = 0 AND RDB$VIEW_BLR IS NULL ORDER BY RDB$RELATION_NAME";
                         retornoQuery = fbQuery.ExecuteReader();
+                        while (retornoQuery.Read())
+                            listaTabelas.Add(retornoQuery.GetString(0).Trim());
                     }
-                    while (retornoQuery.Read())
-                        listaTabelas.Add(retornoQuery.GetString(0));
+                   
                 }
             }
             catch
@@ -65,13 +61,21 @@ namespace Firebird2Sql
             return listaTabelas;
         }
 
+        private FbConnectionStringBuilder FbConnectionStringBuilder()
+        {
+            var connectStringBuilder = new FbConnectionStringBuilder();
+            connectStringBuilder.UserID = textBoxUsu.Text;
+            connectStringBuilder.Password = textBoxSenha.Text;
+            connectStringBuilder.Database = textBoxDatabase.Text;
+            connectStringBuilder.DataSource = textBoxIP.Text;
+            connectStringBuilder.Port = int.Parse(textBoxPorta.Text);
+            return connectStringBuilder;
+        }
+
 
         private List<string> RecuperaTabelasSqlServer()
         {
-            var connectionStringBuilder = new SqlConnectionStringBuilder();
-            connectionStringBuilder.IntegratedSecurity = true;
-            connectionStringBuilder.DataSource = txtServerSql.Text;
-            connectionStringBuilder.InitialCatalog = txtDatabaseSql.Text;
+            var connectionStringBuilder = SqlConnectionStringBuilder();
             var listaTabelas = new List<string>();
             try
             {
@@ -84,9 +88,10 @@ namespace Firebird2Sql
                         sqlQuery.Connection = conexao;
                         sqlQuery.CommandText = "SELECT TABLE_NAME FROM information_schema.tables";
                         retornoQuery = sqlQuery.ExecuteReader();
+                        while (retornoQuery.Read())
+                            listaTabelas.Add(retornoQuery.GetString(0));
                     }
-                    while (retornoQuery.Read())
-                        listaTabelas.Add(retornoQuery.GetString(0));
+                    
                 }
             }
             catch
@@ -96,12 +101,75 @@ namespace Firebird2Sql
             return listaTabelas;
         }
 
-        private void btnMigrar_Click(object sender, EventArgs e)
+        private SqlConnectionStringBuilder SqlConnectionStringBuilder()
         {
-
+            var connectionStringBuilder = new SqlConnectionStringBuilder();
+            connectionStringBuilder.IntegratedSecurity = true;
+            connectionStringBuilder.DataSource = txtServerSql.Text;
+            connectionStringBuilder.InitialCatalog = txtDatabaseSql.Text;
+            return connectionStringBuilder;
         }
 
-      
+        private void btnMigrar_Click(object sender, EventArgs e)
+        {
+            var treeNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>().Where(t => t.Checked);
+            var connectStringBuilderFB = FbConnectionStringBuilder();
+            var connectStringBuilderSql = SqlConnectionStringBuilder();
+
+            using (var conexaoFB = new FbConnection(connectStringBuilderFB.ConnectionString))
+            {
+                using (var conexaoSql = new SqlConnection(connectStringBuilderSql.ConnectionString))
+                {
+                    conexaoFB.Open();
+                    conexaoSql.Open();
+
+                    foreach (var treeNode in treeNodes)
+                    {
+                        FbDataReader retornoFbQuery;
+                        using (var fbQuery = new FbCommand())
+                        {
+                            fbQuery.Connection = conexaoFB;
+                            fbQuery.CommandText = string.Format("select * from {0}", treeNode.Text);
+                            retornoFbQuery = fbQuery.ExecuteReader();
+                            while (retornoFbQuery.Read())
+                            {
+                                var parametros = Enumerable.Range(1, retornoFbQuery.FieldCount).Select(i => "@" + i).ToList();
+                                var sqlQuery = new SqlCommand();
+                                sqlQuery.Connection = conexaoSql;
+                                sqlQuery.CommandText = string.Format("insert into {0} values ({1})", treeNode.Text, string.Join(",", parametros));
+                                for (int i = 0; i < parametros.Count; i++)
+                                {
+                                    var parametro = parametros[i];
+                                    var fieldType = retornoFbQuery.GetFieldType(i);
+                                    var dataTypeName = retornoFbQuery.GetDataTypeName(i);
+                                    if (dataTypeName!= "BLOB")
+                                    {
+                                        sqlQuery.Parameters.Add(new SqlParameter(parametro, retornoFbQuery.GetValue(i)));
+                                        
+                                    }
+                                    else
+                                    {
+                                        var value = Encoding.Default.GetString(retornoFbQuery.GetValue(i) as byte[]);
+                                        sqlQuery.Parameters.Add(new SqlParameter(parametro, value));
+                                    }
+                                }
+                                sqlQuery.ExecuteNonQuery();
+
+
+                            }
+                        }
+
+
+
+
+
+                    }
+                }
+
+            }
+        }
+
+
         private void bbtMostrarTabelaFB_Click(object sender, EventArgs e)
         {
             var recuperaTabelasFb = RecuperaTabelasFB();

@@ -259,6 +259,7 @@
             // 
             // tvTabelasCorrepondentes
             // 
+            this.tvTabelasCorrepondentes.CheckBoxes = true;
             this.tvTabelasCorrepondentes.Location = new System.Drawing.Point(197, 181);
             this.tvTabelasCorrepondentes.Name = "tvTabelasCorrepondentes";
             this.tvTabelasCorrepondentes.Size = new System.Drawing.Size(369, 191);
