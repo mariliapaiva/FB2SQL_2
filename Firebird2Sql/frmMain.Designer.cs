@@ -111,9 +111,9 @@
             this.label3.AutoSize = true;
             this.label3.Location = new System.Drawing.Point(6, 65);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(56, 13);
+            this.label3.Size = new System.Drawing.Size(41, 13);
             this.label3.TabIndex = 13;
-            this.label3.Text = "Database:";
+            this.label3.Text = "Banco:";
             // 
             // textBoxDatabase
             // 
@@ -157,7 +157,7 @@
             // 
             // btnMigrar
             // 
-            this.btnMigrar.Location = new System.Drawing.Point(230, 378);
+            this.btnMigrar.Location = new System.Drawing.Point(327, 378);
             this.btnMigrar.Name = "btnMigrar";
             this.btnMigrar.Size = new System.Drawing.Size(124, 23);
             this.btnMigrar.TabIndex = 8;
@@ -203,9 +203,9 @@
             this.label8.AutoSize = true;
             this.label8.Location = new System.Drawing.Point(6, 65);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(56, 13);
+            this.label8.Size = new System.Drawing.Size(41, 13);
             this.label8.TabIndex = 13;
-            this.label8.Text = "Database:";
+            this.label8.Text = "Banco:";
             // 
             // txtDatabaseSql
             // 

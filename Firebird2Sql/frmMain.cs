@@ -21,11 +21,12 @@ namespace Firebird2Sql
             InitializeComponent();
             textBoxUsu.Text = "SYSDBA";
             textBoxSenha.Text = "masterkey";
-            textBoxDatabase.Text = "C:\\Marilia\\Dados\\CARGAS32.GDB";
+            textBoxDatabase.Text = "C:\\Marília\\Dados\\CARGAS32.GDB";
             textBoxIP.Text = "127.0.0.1";
             textBoxPorta.Text = "3050";
-            txtDatabaseSql.Text = "cargas";
-            txtServerSql.Text = "(LocalDb)\\v11.0";
+            //sqlserver
+            txtDatabaseSql.Text = "Cargas32";
+            txtServerSql.Text =".\\SqlExpress"; //"(LocalDb)\\v11.0";
 
         }
 
@@ -59,7 +60,7 @@ namespace Firebird2Sql
             }
             catch
             {
-                MessageBox.Show(Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_);
+                MessageBox.Show("FB: " +Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_);
             }
             return listaTabelas;
         }
@@ -90,7 +91,7 @@ namespace Firebird2Sql
             }
             catch
             {
-                MessageBox.Show(Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_);
+                MessageBox.Show("SqlServer: " + Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_);
             }
             return listaTabelas;
         }
@@ -100,11 +101,7 @@ namespace Firebird2Sql
 
         }
 
-        private void bbtMostrarTabelasSql_Click_1(object sender, EventArgs e)
-        {
-
-        }
-
+      
         private void bbtMostrarTabelaFB_Click(object sender, EventArgs e)
         {
             var recuperaTabelasFb = RecuperaTabelasFB();
@@ -117,7 +114,7 @@ namespace Firebird2Sql
                 treeNodes.Add(new TreeNode(s));*/
             /*var enumerable = from t in tabelasCorrespondentes //LINQ
                              select new TreeNode(t);*/
-            //var treeNodes = tabelasCorrespondentes.Select(t => new TreeNode(t)); //a linha abaixo equivale a essa
+            //var treeNodes = tabelasCorrespondentes.Select(t => new TreeNode(t)); //com lambda expression
             var treeNodes = tabelasCorrespondentes.Select(ConverteStringToTreeNode);
             tvTabelasCorrepondentes.Nodes.AddRange(treeNodes.ToArray());
         }
