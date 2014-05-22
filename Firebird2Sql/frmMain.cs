@@ -15,7 +15,7 @@ namespace Firebird2Sql
 {
     public partial class FrmFirebirdToSql : Form
     {
-
+        private bool doIt = true;
         public FrmFirebirdToSql()
         {
             InitializeComponent();
@@ -33,7 +33,6 @@ namespace Firebird2Sql
             txtDatabaseSql.Text = "cargas32";
             txtServerSql.Text = "(LocalDb)\\v11.0"; //".\\SqlExpress"; //
         }
-
 
         private FbConnectionStringBuilder FbConnectionStringBuilder()
         {
@@ -124,7 +123,6 @@ namespace Firebird2Sql
             return listaTabelas;
         }
 
-
         private void btnMigrar_Click(object sender, EventArgs e)
         {
             MigrarDados();
@@ -133,35 +131,37 @@ namespace Firebird2Sql
         private void MigrarDados()
         {
             var treeNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>().Where(t => t.Checked);
-            var connectStringBuilderFB = FbConnectionStringBuilder();
+            var connectStringBuilderFb = FbConnectionStringBuilder();
             var connectStringBuilderSql = SqlConnectionStringBuilder();
-            using (var conexaoFB = new FbConnection(connectStringBuilderFB.ConnectionString))
+            using (var conexaoFb = new FbConnection(connectStringBuilderFb.ConnectionString))
             {
                 using (var conexaoSql = new SqlConnection(connectStringBuilderSql.ConnectionString))
                 {
-                    conexaoFB.Open();
+                    conexaoFb.Open();
 
                     conexaoSql.Open();
 
                     var transacaoSql = conexaoSql.BeginTransaction();
+                    var success = true;
+                    Exception ex = null;
 
                     foreach (var treeNode in treeNodes)
                     {
-                        FbDataReader retornoQueryFb;
-                        using (var QueryFb = new FbCommand())
+                        using (var queryFb = new FbCommand())
                         {
-                            QueryFb.Connection = conexaoFB;
-                            QueryFb.CommandText = string.Format("select * from {0}", treeNode.Text);
-                            retornoQueryFb = QueryFb.ExecuteReader();
+                            queryFb.Connection = conexaoFb;
+                            queryFb.CommandText = string.Format("select * from {0}", treeNode.Text);
+                            FbDataReader retornoQueryFb = queryFb.ExecuteReader();
 
 
                             while (retornoQueryFb.Read())
                             {
                                 var parametros = Enumerable.Range(1, retornoQueryFb.FieldCount).Select(i => "@" + i).ToList();
-                                var QueryInsertsql = new SqlCommand();
-                                QueryInsertsql.Connection = conexaoSql;
-                                QueryInsertsql.CommandText = string.Format("insert into {0} values ({1})", treeNode.Text, string.Join(",", parametros));
+                                var queryInsertsql = new SqlCommand();
+                                queryInsertsql.Connection = conexaoSql;
+                                queryInsertsql.CommandText = string.Format("insert into {0} values ({1})", treeNode.Text, string.Join(",", parametros));
 
+                                #region Monta parametros
                                 for (int i = 0; i < parametros.Count; i++)
                                 {
                                     var parametro = parametros[i];
@@ -169,7 +169,7 @@ namespace Firebird2Sql
                                     var dataTypeName = retornoQueryFb.GetDataTypeName(i);
                                     if (dataTypeName != "BLOB")
                                     {
-                                        QueryInsertsql.Parameters.Add(new SqlParameter(parametro, retornoQueryFb.GetValue(i)));
+                                        queryInsertsql.Parameters.Add(new SqlParameter(parametro, retornoQueryFb.GetValue(i)));
                                     }
                                     else
                                     {
@@ -190,39 +190,49 @@ namespace Firebird2Sql
                                             var sqlParameter = new SqlParameter(parametro, SqlDbType.Image);
                                             sqlParameter.Value = value;
                                             sqlParameter.IsNullable = true;
-                                            QueryInsertsql.Parameters.Add(sqlParameter);
+                                            queryInsertsql.Parameters.Add(sqlParameter);
                                         }
                                         else
                                         {
                                             var bytes = retornoQueryFb.GetValue(i) as byte[] ?? new byte[1];
                                             var value = Encoding.Default.GetString(bytes);
-                                            QueryInsertsql.Parameters.Add(new SqlParameter(parametro, value));
+                                            queryInsertsql.Parameters.Add(new SqlParameter(parametro, value));
                                         }
                                     }
                                 }
+
+                                #endregion
+
                                 try
                                 {
-                                    QueryInsertsql.Transaction = transacaoSql;
-                                    QueryInsertsql.ExecuteNonQuery();
+                                    queryInsertsql.Transaction = transacaoSql;
+                                    queryInsertsql.ExecuteNonQuery();
                                 }
-                                catch (SqlException ex)
+                                catch (Exception exception)
                                 {
-
-                                    transacaoSql.Rollback();
-                                    MessageBox.Show("Erro na Migração dos Dados: "+ex.Message);
+                                    ex = exception;
+                                    success = false;
                                 }
-                                
+
                             }
-
-                            transacaoSql.Commit();
-                            MessageBox.Show("Migração realizada com sucesso.");
-
                         }
                     }
+
+                    if (success)
+                    {
+                        transacaoSql.Commit();
+                        MessageBox.Show("Migração realizada com sucesso."); 
+                    }
+                    else
+                    {
+                        transacaoSql.Rollback();
+                        MessageBox.Show(string.Format("Erro na Migração dos Dados: {0}", ex.Message)); 
+                    }
+
+
                 }
             }
         }
-
 
         private void bbtMostrarTabelaFB_Click(object sender, EventArgs e)
         {
@@ -250,11 +260,10 @@ namespace Firebird2Sql
         private void bbtMarcarTodos_Click(object sender, EventArgs e)
         {
             var treeNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>();
-            //var enumerable = treeNodes as TreeNode[] ?? treeNodes.ToArray();
-
-            if (treeNodes.Count() != 0)
+            var enumerable = treeNodes as IList<TreeNode> ?? treeNodes.ToList();
+            if (enumerable.Count() != 0)
             {
-                foreach (var treeNode in treeNodes)
+                foreach (var treeNode in enumerable)
                 {
                     if (treeNode.Checked)
                     {
@@ -273,10 +282,6 @@ namespace Firebird2Sql
             {
                 MessageBox.Show("Não há tabelas para selecionar ");
             }
-
-
-
-
         }
     }
 }
