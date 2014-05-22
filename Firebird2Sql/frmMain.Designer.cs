@@ -49,8 +49,11 @@
             this.txtSenhaSql = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
             this.txtUsuSql = new System.Windows.Forms.TextBox();
-            this.bbtMostrarTabelaFB = new System.Windows.Forms.Button();
+            this.bbtMostrarTabelas = new System.Windows.Forms.Button();
             this.tvTabelasCorrepondentes = new System.Windows.Forms.TreeView();
+            this.lblQtdTabelasFB = new System.Windows.Forms.Label();
+            this.lblQtdTabelasSql = new System.Windows.Forms.Label();
+            this.bbtMarcarTodos = new System.Windows.Forms.Button();
             this.groupBoxFB.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -157,9 +160,9 @@
             // 
             // btnMigrar
             // 
-            this.btnMigrar.Location = new System.Drawing.Point(327, 378);
+            this.btnMigrar.Location = new System.Drawing.Point(305, 287);
             this.btnMigrar.Name = "btnMigrar";
-            this.btnMigrar.Size = new System.Drawing.Size(124, 23);
+            this.btnMigrar.Size = new System.Drawing.Size(113, 23);
             this.btnMigrar.TabIndex = 8;
             this.btnMigrar.Text = "Migrar Dados";
             this.btnMigrar.UseVisualStyleBackColor = true;
@@ -247,31 +250,64 @@
             this.txtUsuSql.Size = new System.Drawing.Size(117, 20);
             this.txtUsuSql.TabIndex = 7;
             // 
-            // bbtMostrarTabelaFB
+            // bbtMostrarTabelas
             // 
-            this.bbtMostrarTabelaFB.Location = new System.Drawing.Point(12, 181);
-            this.bbtMostrarTabelaFB.Name = "bbtMostrarTabelaFB";
-            this.bbtMostrarTabelaFB.Size = new System.Drawing.Size(170, 42);
-            this.bbtMostrarTabelaFB.TabIndex = 10;
-            this.bbtMostrarTabelaFB.Text = "Mostrar Tabelas Correspondentes";
-            this.bbtMostrarTabelaFB.UseVisualStyleBackColor = true;
-            this.bbtMostrarTabelaFB.Click += new System.EventHandler(this.bbtMostrarTabelaFB_Click);
+            this.bbtMostrarTabelas.Location = new System.Drawing.Point(12, 181);
+            this.bbtMostrarTabelas.Name = "bbtMostrarTabelas";
+            this.bbtMostrarTabelas.Size = new System.Drawing.Size(170, 42);
+            this.bbtMostrarTabelas.TabIndex = 10;
+            this.bbtMostrarTabelas.Text = "Mostrar Tabelas Correspondentes";
+            this.bbtMostrarTabelas.UseVisualStyleBackColor = true;
+            this.bbtMostrarTabelas.Click += new System.EventHandler(this.bbtMostrarTabelaFB_Click);
             // 
             // tvTabelasCorrepondentes
             // 
             this.tvTabelasCorrepondentes.CheckBoxes = true;
-            this.tvTabelasCorrepondentes.Location = new System.Drawing.Point(197, 181);
+            this.tvTabelasCorrepondentes.Location = new System.Drawing.Point(12, 229);
             this.tvTabelasCorrepondentes.Name = "tvTabelasCorrepondentes";
-            this.tvTabelasCorrepondentes.Size = new System.Drawing.Size(369, 191);
+            this.tvTabelasCorrepondentes.Size = new System.Drawing.Size(287, 321);
             this.tvTabelasCorrepondentes.TabIndex = 11;
+            // 
+            // lblQtdTabelasFB
+            // 
+            this.lblQtdTabelasFB.AutoSize = true;
+            this.lblQtdTabelasFB.ForeColor = System.Drawing.SystemColors.HotTrack;
+            this.lblQtdTabelasFB.Location = new System.Drawing.Point(305, 512);
+            this.lblQtdTabelasFB.Name = "lblQtdTabelasFB";
+            this.lblQtdTabelasFB.Size = new System.Drawing.Size(120, 13);
+            this.lblQtdTabelasFB.TabIndex = 12;
+            this.lblQtdTabelasFB.Text = "Qtd de Tabelas Firebird:";
+            // 
+            // lblQtdTabelasSql
+            // 
+            this.lblQtdTabelasSql.AutoSize = true;
+            this.lblQtdTabelasSql.ForeColor = System.Drawing.SystemColors.HotTrack;
+            this.lblQtdTabelasSql.Location = new System.Drawing.Point(305, 537);
+            this.lblQtdTabelasSql.Name = "lblQtdTabelasSql";
+            this.lblQtdTabelasSql.Size = new System.Drawing.Size(101, 13);
+            this.lblQtdTabelasSql.TabIndex = 13;
+            this.lblQtdTabelasSql.Text = "Qtd de Tabelas Sql:";
+            // 
+            // bbtMarcarTodos
+            // 
+            this.bbtMarcarTodos.Location = new System.Drawing.Point(305, 229);
+            this.bbtMarcarTodos.Name = "bbtMarcarTodos";
+            this.bbtMarcarTodos.Size = new System.Drawing.Size(113, 23);
+            this.bbtMarcarTodos.TabIndex = 14;
+            this.bbtMarcarTodos.Text = "&Marcar Todos";
+            this.bbtMarcarTodos.UseVisualStyleBackColor = true;
+            this.bbtMarcarTodos.Click += new System.EventHandler(this.bbtMarcarTodos_Click);
             // 
             // FrmFirebirdToSql
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(582, 413);
+            this.ClientSize = new System.Drawing.Size(582, 562);
+            this.Controls.Add(this.bbtMarcarTodos);
+            this.Controls.Add(this.lblQtdTabelasSql);
+            this.Controls.Add(this.lblQtdTabelasFB);
             this.Controls.Add(this.tvTabelasCorrepondentes);
-            this.Controls.Add(this.bbtMostrarTabelaFB);
+            this.Controls.Add(this.bbtMostrarTabelas);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.btnMigrar);
             this.Controls.Add(this.groupBoxFB);
@@ -282,6 +318,7 @@
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -308,8 +345,11 @@
         private System.Windows.Forms.TextBox txtSenhaSql;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.TextBox txtUsuSql;
-        private System.Windows.Forms.Button bbtMostrarTabelaFB;
+        private System.Windows.Forms.Button bbtMostrarTabelas;
         private System.Windows.Forms.TreeView tvTabelasCorrepondentes;
+        private System.Windows.Forms.Label lblQtdTabelasFB;
+        private System.Windows.Forms.Label lblQtdTabelasSql;
+        private System.Windows.Forms.Button bbtMarcarTodos;
     }
 }
 
