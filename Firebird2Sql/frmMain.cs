@@ -15,11 +15,18 @@ namespace Firebird2Sql
 {
     public partial class FrmFirebirdToSql : Form
     {
-        private bool doIt = true;
+        private readonly RecuperaTabelas _recuperaTabelas;
+
         public FrmFirebirdToSql()
         {
             InitializeComponent();
             PreencheParametros();
+            _recuperaTabelas = new RecuperaTabelas(this);
+        }
+
+        public RecuperaTabelas RecuperaTabelas
+        {
+            get { return _recuperaTabelas; }
         }
 
         private void PreencheParametros()
@@ -34,7 +41,7 @@ namespace Firebird2Sql
             txtServerSql.Text = "(LocalDb)\\v11.0"; //".\\SqlExpress"; //
         }
 
-        private FbConnectionStringBuilder FbConnectionStringBuilder()
+        public FbConnectionStringBuilder FbConnectionStringBuilder()
         {
             var connectStringBuilder = new FbConnectionStringBuilder();
             connectStringBuilder.UserID = textBoxUsu.Text;
@@ -45,41 +52,8 @@ namespace Firebird2Sql
             return connectStringBuilder;
         }
 
-        private List<string> RecuperaTabelasFB()
-        {
 
-            var connectStringBuilder = FbConnectionStringBuilder();
-            var listaTabelas = new List<string>();
-            var qtdTabelasFb = 0;
-            try
-            {
-                using (var conexao = new FbConnection(connectStringBuilder.ConnectionString))
-                {
-                    conexao.Open();
-                    FbDataReader retornoQuery;
-                    using (var fbQuery = new FbCommand())
-                    {
-                        fbQuery.Connection = conexao;
-                        fbQuery.CommandText = "SELECT RDB$RELATION_NAME FROM RDB$RELATIONS WHERE RDB$SYSTEM_FLAG = 0 AND RDB$VIEW_BLR IS NULL ORDER BY RDB$RELATION_NAME";
-                        retornoQuery = fbQuery.ExecuteReader();
-                        while (retornoQuery.Read())
-                        {
-                            listaTabelas.Add(retornoQuery.GetString(0).Trim());
-                            qtdTabelasFb++;
-                        }
-                    }
-
-                }
-            }
-            catch
-            {
-                MessageBox.Show("FB: " + Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_);
-            }
-            lblQtdTabelasFB.Text = "Qtd de Tabelas Firebird: " + qtdTabelasFb.ToString();
-            return listaTabelas;
-        }
-
-        private SqlConnectionStringBuilder SqlConnectionStringBuilder()
+        public SqlConnectionStringBuilder SqlConnectionStringBuilder()
         {
             var connectionStringBuilder = new SqlConnectionStringBuilder();
             connectionStringBuilder.IntegratedSecurity = true;
@@ -88,44 +62,53 @@ namespace Firebird2Sql
             return connectionStringBuilder;
         }
 
-        private List<string> RecuperaTabelasSqlServer()
+        private List<string> RecuperaForeignKeyTabelasSql()
         {
+            var treeNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>().Where(t => t.Checked);
             var connectionStringBuilder = SqlConnectionStringBuilder();
-            var listaTabelas = new List<string>();
-            var qtdTabelasSql = 0;
+            var listaFk = new List<string>();
 
-            try
+            using (var conexao = new SqlConnection(connectionStringBuilder.ConnectionString))
             {
-                using (var conexao = new SqlConnection(connectionStringBuilder.ConnectionString))
+                conexao.Open();
+
+                SqlDataReader retornoQuery;
+                foreach (var treeNode in treeNodes)
                 {
-                    conexao.Open();
-                    SqlDataReader retornoQuery;
                     using (var sqlQuery = new SqlCommand())
                     {
                         sqlQuery.Connection = conexao;
-                        sqlQuery.CommandText = "SELECT TABLE_NAME FROM information_schema.tables";
+                        sqlQuery.CommandText = string.Format(
+                            " SELECT DISTINCT t.name  AS TableWithForeignKey, fk.constraint_column_id AS FK_PartNo, c.name AS ForeignKeyColumn  " +
+                            " FROM   sys.foreign_key_columns AS fk  " +
+                            "        INNER JOIN sys.tables AS t ON fk.parent_object_id = t.object_id  " +
+                            "        INNER JOIN sys.columns AS c ON fk.parent_object_id = c.object_id AND fk.parent_column_id = c.column_id " +
+                            " WHERE  fk.referenced_object_id = (SELECT object_id FROM   sys.tables WHERE  name = {0}) " +
+                            "ORDER  BY tablewithforeignkey, FK_PartNo", treeNode.Text);
                         retornoQuery = sqlQuery.ExecuteReader();
                         while (retornoQuery.Read())
                         {
-                            listaTabelas.Add(retornoQuery.GetString(0));
-                            qtdTabelasSql++;
-
+                            listaFk.Add(retornoQuery.GetString(0));
                         }
                     }
-
                 }
             }
-            catch
-            {
-                MessageBox.Show("SqlServer: " + Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_);
-            }
-            lblQtdTabelasSql.Text = "Qtd de Tabelas Sql: " + qtdTabelasSql.ToString();
-            return listaTabelas;
+
+            return listaFk;
+
         }
 
         private void btnMigrar_Click(object sender, EventArgs e)
         {
-            MigrarDados();
+            var treeNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>().Where(x => x.Checked);
+            if (treeNodes.Count() != 0)
+            {
+                MigrarDados();
+            }
+            else
+            {
+                MessageBox.Show(string.Format("Não há tabelas marcadas."));
+            }
         }
 
         private void MigrarDados()
@@ -138,11 +121,10 @@ namespace Firebird2Sql
                 using (var conexaoSql = new SqlConnection(connectStringBuilderSql.ConnectionString))
                 {
                     conexaoFb.Open();
-
                     conexaoSql.Open();
 
                     var transacaoSql = conexaoSql.BeginTransaction();
-                    var success = true;
+                    var successo = true;
                     Exception ex = null;
 
                     foreach (var treeNode in treeNodes)
@@ -161,7 +143,7 @@ namespace Firebird2Sql
                                 queryInsertsql.Connection = conexaoSql;
                                 queryInsertsql.CommandText = string.Format("insert into {0} values ({1})", treeNode.Text, string.Join(",", parametros));
 
-                                #region Monta parametros
+                                #region Monta parametros Insert
                                 for (int i = 0; i < parametros.Count; i++)
                                 {
                                     var parametro = parametros[i];
@@ -211,17 +193,17 @@ namespace Firebird2Sql
                                 catch (Exception exception)
                                 {
                                     ex = exception;
-                                    success = false;
+                                    successo = false;
                                 }
 
                             }
                         }
                     }
 
-                    if (success)
+                    if (successo)
                     {
                         transacaoSql.Commit();
-                        MessageBox.Show("Migração realizada com sucesso."); 
+                        MessageBox.Show(string.Format("Migração dos Dados realizada com sucesso.")); 
                     }
                     else
                     {
@@ -236,8 +218,13 @@ namespace Firebird2Sql
 
         private void bbtMostrarTabelaFB_Click(object sender, EventArgs e)
         {
-            var recuperaTabelasFb = RecuperaTabelasFB();
-            var recuperaTabelasSqlServer = RecuperaTabelasSqlServer();
+            MostrarTabelas();
+        }
+
+        private void MostrarTabelas()
+        {
+            var recuperaTabelasFb = RecuperaTabelas.TabelasFb();
+            var recuperaTabelasSqlServer = RecuperaTabelas.TabelasSqlServer();
 
             var tabelasCorrespondentes = recuperaTabelasFb.Intersect(recuperaTabelasSqlServer);
             /*var pares = Enumerable.Range(1, 100).Where(i => i % 2 == 0);*/
@@ -268,19 +255,19 @@ namespace Firebird2Sql
                     if (treeNode.Checked)
                     {
                         treeNode.Checked = false;
-                        bbtMarcarTodos.Text = "&Marcar Todos";
+                        bbtMarcarTodos.Text = string.Format("&Marcar Todos");
                     }
                     else
                     {
                         treeNode.Checked = true;
-                        bbtMarcarTodos.Text = "&Desmarcar Todos";
+                        bbtMarcarTodos.Text = string.Format("&Desmarcar Todos");
                     }
 
                 }
             }
             else
             {
-                MessageBox.Show("Não há tabelas para selecionar ");
+                MessageBox.Show(string.Format("Não há tabelas para marcar."));
             }
         }
     }
