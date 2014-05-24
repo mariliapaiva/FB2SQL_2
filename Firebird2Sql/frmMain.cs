@@ -33,11 +33,11 @@ namespace Firebird2Sql
         {
             textBoxUsu.Text = "SYSDBA";
             textBoxSenha.Text = "masterkey";
-            textBoxDatabase.Text = @"D:\Downloads\Marília\CARGAS32_62.GDB";
+            textBoxDatabase.Text = @"C:\Marilia\Dados\CARGAS32.GDB";
             textBoxIP.Text = "127.0.0.1";
             textBoxPorta.Text = "3050";
             //sqlserver
-            txtDatabaseSql.Text = "cargas32";
+            txtDatabaseSql.Text = "cargas";
             txtServerSql.Text = "(LocalDb)\\v11.0"; //".\\SqlExpress"; //
         }
 
@@ -62,33 +62,39 @@ namespace Firebird2Sql
             return connectionStringBuilder;
         }
 
-        private List<string> RecuperaForeignKeyTabelasSql()
+        private List<Tabela> RecuperaForeignKeyTabelasSql()
         {
             var treeNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>().Where(t => t.Checked);
             var connectionStringBuilder = SqlConnectionStringBuilder();
-            var listaFk = new List<string>();
+            var listaFk = new List<Tabela>();
 
             using (var conexao = new SqlConnection(connectionStringBuilder.ConnectionString))
             {
                 conexao.Open();
 
-                SqlDataReader retornoQuery;
                 foreach (var treeNode in treeNodes)
                 {
                     using (var sqlQuery = new SqlCommand())
                     {
                         sqlQuery.Connection = conexao;
-                        sqlQuery.CommandText = string.Format(
-                            " SELECT DISTINCT t.name  AS TableWithForeignKey, fk.constraint_column_id AS FK_PartNo, c.name AS ForeignKeyColumn  " +
-                            " FROM   sys.foreign_key_columns AS fk  " +
-                            "        INNER JOIN sys.tables AS t ON fk.parent_object_id = t.object_id  " +
-                            "        INNER JOIN sys.columns AS c ON fk.parent_object_id = c.object_id AND fk.parent_column_id = c.column_id " +
-                            " WHERE  fk.referenced_object_id = (SELECT object_id FROM   sys.tables WHERE  name = {0}) " +
-                            "ORDER  BY tablewithforeignkey, FK_PartNo", treeNode.Text);
-                        retornoQuery = sqlQuery.ExecuteReader();
-                        while (retornoQuery.Read())
+                        const string sql = @" SELECT DISTINCT t.name  AS TableWithForeignKey, fk.constraint_column_id AS FK_PartNo
+                                     FROM   sys.foreign_key_columns AS fk  
+                                            INNER JOIN sys.tables AS t ON fk.parent_object_id = t.object_id  
+                                            INNER JOIN sys.columns AS c ON fk.parent_object_id = c.object_id AND fk.parent_column_id = c.column_id
+                                     WHERE  fk.referenced_object_id = (SELECT object_id FROM   sys.tables WHERE  name = '{0}')                      
+                                     ORDER  BY tablewithforeignkey, FK_PartNo";
+                        sqlQuery.CommandText = string.Format(sql, treeNode.Text);
+                        using (SqlDataReader retornoQuery = sqlQuery.ExecuteReader())
                         {
-                            listaFk.Add(retornoQuery.GetString(0));
+                            var t = new Tabela
+                                {
+                                    Nome = treeNode.Text,
+                                    DependenciasList = new List<string>()
+                                };
+                            while (retornoQuery.Read())
+                                t.DependenciasList.Add(retornoQuery.GetString(0));
+
+                            listaFk.Add(t);
                         }
                     }
                 }
@@ -203,12 +209,12 @@ namespace Firebird2Sql
                     if (successo)
                     {
                         transacaoSql.Commit();
-                        MessageBox.Show(string.Format("Migração dos Dados realizada com sucesso.")); 
+                        MessageBox.Show(string.Format("Migração dos Dados realizada com sucesso."));
                     }
                     else
                     {
                         transacaoSql.Rollback();
-                        MessageBox.Show(string.Format("Erro na Migração dos Dados: {0}", ex.Message)); 
+                        MessageBox.Show(string.Format("Erro na Migração dos Dados: {0}", ex.Message));
                     }
 
 
@@ -268,6 +274,19 @@ namespace Firebird2Sql
             else
             {
                 MessageBox.Show(string.Format("Não há tabelas para marcar."));
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var recuperaTabelasFk = RecuperaForeignKeyTabelasSql();
+            tvFK.Nodes.Clear();
+            foreach (var tabela in recuperaTabelasFk)
+            {
+                var treeNode = new TreeNode(tabela.Nome);
+                foreach (var item in tabela.DependenciasList)
+                    treeNode.Nodes.Add(item);
+                tvFK.Nodes.Add(treeNode);
             }
         }
     }

@@ -26,12 +26,11 @@ namespace Firebird2Sql
                 using (var conexao = new FbConnection(connectStringBuilder.ConnectionString))
                 {
                     conexao.Open();
-                    FbDataReader retornoQuery;
                     using (var fbQuery = new FbCommand())
                     {
                         fbQuery.Connection = conexao;
                         fbQuery.CommandText = "SELECT RDB$RELATION_NAME FROM RDB$RELATIONS WHERE RDB$SYSTEM_FLAG = 0 AND RDB$VIEW_BLR IS NULL ORDER BY RDB$RELATION_NAME";
-                        retornoQuery = fbQuery.ExecuteReader();
+                        FbDataReader retornoQuery = fbQuery.ExecuteReader();
                         while (retornoQuery.Read())
                         {
                             listaTabelas.Add(retornoQuery.GetString(0).Trim());
@@ -61,12 +60,11 @@ namespace Firebird2Sql
                 using (var conexao = new SqlConnection(connectionStringBuilder.ConnectionString))
                 {
                     conexao.Open();
-                    SqlDataReader retornoQuery;
                     using (var sqlQuery = new SqlCommand())
                     {
                         sqlQuery.Connection = conexao;
                         sqlQuery.CommandText = "SELECT TABLE_NAME FROM information_schema.tables";
-                        retornoQuery = sqlQuery.ExecuteReader();
+                        SqlDataReader retornoQuery = sqlQuery.ExecuteReader();
                         while (retornoQuery.Read())
                         {
                             listaTabelas.Add(retornoQuery.GetString(0));
@@ -84,6 +82,8 @@ namespace Firebird2Sql
             _frmFirebirdToSql.lblQtdTabelasSql.Text = string.Format("MSSQL: " + qtdTabelasSql);
             return listaTabelas;
         }
+
+
 
       
     }

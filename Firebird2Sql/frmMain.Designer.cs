@@ -56,6 +56,8 @@
             this.lblQtdTabelasSql = new System.Windows.Forms.Label();
             this.lblQtdTabelasFB = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
+            this.tvFK = new System.Windows.Forms.TreeView();
+            this.button1 = new System.Windows.Forms.Button();
             this.groupBoxFB.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -324,11 +326,30 @@
             this.label6.TabIndex = 16;
             this.label6.Text = "Lista de Tabelas:";
             // 
+            // tvFK
+            // 
+            this.tvFK.Location = new System.Drawing.Point(660, 103);
+            this.tvFK.Name = "tvFK";
+            this.tvFK.Size = new System.Drawing.Size(287, 346);
+            this.tvFK.TabIndex = 17;
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(660, 62);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(113, 35);
+            this.button1.TabIndex = 18;
+            this.button1.Text = "TESTE";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
             // FrmFirebirdToSql
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(582, 562);
+            this.ClientSize = new System.Drawing.Size(996, 562);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.tvFK);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.bbtMarcarTodos);
@@ -380,6 +401,8 @@
         public System.Windows.Forms.Label lblQtdTabelasSql;
         public System.Windows.Forms.Label lblQtdTabelasFB;
         public System.Windows.Forms.Label label6;
+        private System.Windows.Forms.TreeView tvFK;
+        private System.Windows.Forms.Button button1;
     }
 }
 
