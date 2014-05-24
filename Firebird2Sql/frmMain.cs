@@ -77,12 +77,12 @@ namespace Firebird2Sql
                     using (var sqlQuery = new SqlCommand())
                     {
                         sqlQuery.Connection = conexao;
-                        const string sql = @" SELECT DISTINCT t.name  AS TableWithForeignKey, fk.constraint_column_id AS FK_PartNo
+                        const string sql = @" SELECT DISTINCT t.name  AS TableWithForeignKey
                                      FROM   sys.foreign_key_columns AS fk  
                                             INNER JOIN sys.tables AS t ON fk.parent_object_id = t.object_id  
                                             INNER JOIN sys.columns AS c ON fk.parent_object_id = c.object_id AND fk.parent_column_id = c.column_id
                                      WHERE  fk.referenced_object_id = (SELECT object_id FROM   sys.tables WHERE  name = '{0}')                      
-                                     ORDER  BY tablewithforeignkey, FK_PartNo";
+                                     ORDER  BY tablewithforeignkey";
                         sqlQuery.CommandText = string.Format(sql, treeNode.Text);
                         using (SqlDataReader retornoQuery = sqlQuery.ExecuteReader())
                         {
@@ -288,10 +288,14 @@ namespace Firebird2Sql
             tvFK.Nodes.Clear();
             foreach (var tabela in recuperaTabelasFk)
             {
-                var treeNode = new TreeNode(tabela.Nome);
-                foreach (var item in tabela.DependenciasList)
-                    treeNode.Nodes.Add(item);
-                tvFK.Nodes.Add(treeNode);
+                if (tabela.DependenciasList.Any())
+                {
+                    var treeNode = new TreeNode(tabela.Nome);
+                    foreach (var item in tabela.DependenciasList)
+                        treeNode.Nodes.Add(item);
+                    tvFK.Nodes.Add(treeNode);   
+                }
+                
             }
         }
     }
