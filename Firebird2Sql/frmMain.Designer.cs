@@ -117,9 +117,9 @@
             this.label3.AutoSize = true;
             this.label3.Location = new System.Drawing.Point(6, 65);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(41, 13);
+            this.label3.Size = new System.Drawing.Size(100, 13);
             this.label3.TabIndex = 13;
-            this.label3.Text = "Banco:";
+            this.label3.Text = "Caminho do Banco:";
             // 
             // textBoxDatabase
             // 
@@ -286,9 +286,9 @@
             this.groupBox2.Controls.Add(this.lblQtdTabelasSql);
             this.groupBox2.Controls.Add(this.lblQtdTabelasFB);
             this.groupBox2.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.groupBox2.Location = new System.Drawing.Point(305, 466);
+            this.groupBox2.Location = new System.Drawing.Point(305, 472);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(188, 84);
+            this.groupBox2.Size = new System.Drawing.Size(188, 78);
             this.groupBox2.TabIndex = 15;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Quantidade de Tabelas:";
