@@ -279,6 +279,11 @@ namespace Firebird2Sql
 
         private void button1_Click(object sender, EventArgs e)
         {
+            RecuperaFkDasTabelas();
+        }
+
+        private void RecuperaFkDasTabelas()
+        {
             var recuperaTabelasFk = RecuperaForeignKeyTabelasSql();
             tvFK.Nodes.Clear();
             foreach (var tabela in recuperaTabelasFk)

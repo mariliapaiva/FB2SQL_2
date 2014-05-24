@@ -328,18 +328,18 @@
             // 
             // tvFK
             // 
-            this.tvFK.Location = new System.Drawing.Point(660, 103);
+            this.tvFK.Location = new System.Drawing.Point(596, 57);
             this.tvFK.Name = "tvFK";
             this.tvFK.Size = new System.Drawing.Size(287, 346);
             this.tvFK.TabIndex = 17;
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(660, 62);
+            this.button1.Location = new System.Drawing.Point(596, 16);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(113, 35);
             this.button1.TabIndex = 18;
-            this.button1.Text = "TESTE";
+            this.button1.Text = "Mostra Dependências";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
