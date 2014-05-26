@@ -7,6 +7,7 @@ using System.Linq;
 using System;
 using System.Data;
 using System.Text;
+using System.Data.Common;
 
 namespace Firebird2Sql
 {
@@ -46,26 +47,12 @@ namespace Firebird2Sql
             var qtdTabelasFb = 0;
             try
             {
-                using (var conexao = new FbConnection(connectStringBuilder))
-                {
-                    conexao.Open();
-                    using (var fbQuery = new FbCommand())
-                    {
-                        fbQuery.Connection = conexao;
-                        fbQuery.CommandText = @"SELECT RDB$RELATION_NAME 
+                var comando = @"SELECT RDB$RELATION_NAME 
                                                 FROM RDB$RELATIONS 
                                                 WHERE RDB$SYSTEM_FLAG = 0 AND 
                                                         RDB$VIEW_BLR IS NULL 
                                                 ORDER BY RDB$RELATION_NAME";
-                        FbDataReader retornoQuery = fbQuery.ExecuteReader();
-                        while (retornoQuery.Read())
-                        {
-                            listaTabelas.Add(retornoQuery.GetString(0).Trim());
-                            qtdTabelasFb++;
-                        }
-                    }
-
-                }
+                qtdTabelasFb = RecuperaTabelas(new FbConnection(connectStringBuilder), new FbCommand(), listaTabelas, qtdTabelasFb, comando);
             }
             catch
             {
@@ -77,30 +64,14 @@ namespace Firebird2Sql
 
         public List<string> TabelasSqlServer()
         {
-
-            var connectionStringBuilder = conexaoMgr.ConnectionStringSql;
+            var connectionString = conexaoMgr.ConnectionStringSql;
             var listaTabelas = new List<string>();
             var qtdTabelasSql = 0;
 
             try
             {
-                using (var conexao = new SqlConnection(connectionStringBuilder))
-                {
-                    conexao.Open();
-                    using (var sqlQuery = new SqlCommand())
-                    {
-                        sqlQuery.Connection = conexao;
-                        sqlQuery.CommandText = "SELECT TABLE_NAME FROM information_schema.tables";
-                        SqlDataReader retornoQuery = sqlQuery.ExecuteReader();
-                        while (retornoQuery.Read())
-                        {
-                            listaTabelas.Add(retornoQuery.GetString(0));
-                            qtdTabelasSql++;
-
-                        }
-                    }
-
-                }
+                var comando = "SELECT TABLE_NAME FROM information_schema.tables";
+                qtdTabelasSql = RecuperaTabelas(new SqlConnection(connectionString), new SqlCommand(), listaTabelas, qtdTabelasSql, comando);
             }
             catch
             {
@@ -108,6 +79,26 @@ namespace Firebird2Sql
             }
             QtdTabelasMsSql = qtdTabelasSql;
             return listaTabelas;
+        }
+
+        private static int RecuperaTabelas(DbConnection conexao, DbCommand query, List<string> listaTabelas, int qtdTabelasFb, string comando)
+        {
+            using (conexao)
+            {
+                conexao.Open();
+                using (query)
+                {
+                    query.Connection = conexao;
+                    query.CommandText = comando;
+                    var retornoQuery = query.ExecuteReader();
+                    while (retornoQuery.Read())
+                    {
+                        listaTabelas.Add(retornoQuery.GetString(0).Trim());
+                        qtdTabelasFb++;
+                    }
+                }
+            }
+            return qtdTabelasFb;
         }
 
 
