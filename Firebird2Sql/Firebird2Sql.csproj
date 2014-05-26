@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Conexao.cs" />
+    <Compile Include="DependenciasNaoSatisfeitasException.cs" />
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>
     </Compile>

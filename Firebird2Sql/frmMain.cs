@@ -15,7 +15,7 @@ namespace Firebird2Sql
 {
     public partial class FrmFirebirdToSql : Form
     {
-        private  MigradorDados migradorDados;
+        private MigradorDados migradorDados;
 
         public FrmFirebirdToSql()
         {
@@ -24,7 +24,7 @@ namespace Firebird2Sql
 
         }
 
-       
+
         private void PreencheParametros()
         {
             textBoxUsu.Text = "SYSDBA";
@@ -37,28 +37,47 @@ namespace Firebird2Sql
             txtServerSql.Text = "(LocalDb)\\v11.0"; //".\\SqlExpress"; //
         }
 
-  
+
         private void btnMigrar_Click(object sender, EventArgs e)
         {
-            var treeNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>().Where(x => x.Checked);
-            if (treeNodes.Count() != 0)
+            var todosNodes = tvTabelasCorrepondentes.Nodes.Cast<TreeNode>();
+            var treeNodes = todosNodes.Where(x => x.Checked);
+            if (treeNodes.Any())
             {
-                migradorDados.MigrarDados(tvTabelasCorrepondentes);
+                try
+                {
+                    migradorDados.MigrarDados(treeNodes.Select(treeNode => treeNode.Text));
+                }
+                catch (DependenciasNaoSatisfeitasException ex)
+                {
+                    var dialogResult = MessageBox.Show(ex.Message + "\nVocê deseja que elas sejam adicionadas?", "Firebird2Sql", MessageBoxButtons.YesNo);
+                    if (dialogResult == DialogResult.Yes)
+                    {
+                        var nodesDeDependencia = todosNodes.Where(t => ex.Dependencias.Any(d => t.Text == d));
+                        foreach (var node in nodesDeDependencia)
+                            node.Checked = true;
+                    }
+                    else
+                    {
+                        var node = todosNodes.Single(t => t.Text == ex.Tabela);
+                        node.Checked = false;
+                    }
+                }
             }
             else
-            {
                 MessageBox.Show(string.Format("Não há tabelas marcadas."));
-            }
         }
 
-  
         private void bbtMostrarTabelaFB_Click(object sender, EventArgs e)
         {
             Conexao con = new Conexao();
-            con.FbConnectionStringBuilder(textBoxUsu.Text, textBoxSenha.Text, textBoxDatabase.Text,textBoxIP.Text, textBoxPorta.Text);
+            con.FbConnectionStringBuilder(textBoxUsu.Text, textBoxSenha.Text, textBoxDatabase.Text, textBoxIP.Text, textBoxPorta.Text);
             con.SqlConnectionStringBuilder(txtServerSql.Text, txtDatabaseSql.Text);
             migradorDados = new MigradorDados(con);
             MostrarTabelas(tvTabelasCorrepondentes);
+            lblQtdTabelasFB.Text = string.Format("FIREBIRD: " + migradorDados.QtdTabelasFb);
+            lblQtdTabelasSql.Text = string.Format("MSSQL: " + migradorDados.QtdTabelasMsSql);
+
         }
 
         private void MostrarTabelas(TreeView tv)
@@ -77,7 +96,7 @@ namespace Firebird2Sql
             //var treeNodes = tabelasCorrespondentes.Select(t => new TreeNode(t)); //com lambda expression
             //.Select(tabelasCorrespondentes,ConverteStringToTreeNode)
             //cada item de tabelasCorrespondentes é passado como parâmetro para a função ConverteStringToTreeNode
-            
+
             var treeNodes = tabelasCorrespondentes.Select(ConverteStringToTreeNode);
             tv.Nodes.AddRange(treeNodes.ToArray());
         }
@@ -95,35 +114,20 @@ namespace Firebird2Sql
         private void MarcarTodos(TreeView tv)
         {
             var treeNodes = tv.Nodes.Cast<TreeNode>();
-            var enumerable = treeNodes as IList<TreeNode> ?? treeNodes.ToList();
-            if (enumerable.Count() != 0)
+            if (treeNodes.Any())
             {
-                foreach (var treeNode in enumerable)
+                foreach (var treeNode in treeNodes)
                 {
-                    if (treeNode.Checked)
-                    {
-                        treeNode.Checked = false;
-                        bbtMarcarTodos.Text = string.Format("&Marcar Todos");
-                    }
-                    else
-                    {
-                        treeNode.Checked = true;
-                        bbtMarcarTodos.Text = string.Format("&Desmarcar Todos");
-                    }
-
+                    treeNode.Checked = !treeNode.Checked;
+                    bbtMarcarTodos.Text = treeNode.Checked ? "&Marcar Todos" : "&Desmarcar Todos"; //Expressão ternária
                 }
             }
             else
-            {
-                MessageBox.Show(string.Format("Não há tabelas para marcar."));
-            }
+                MessageBox.Show("Não há tabelas para marcar.");
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-           // migradorDados.RecuperaFkDasTabelas();
-        }
 
-     
+
+
     }
 }

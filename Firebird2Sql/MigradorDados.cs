@@ -14,27 +14,30 @@ namespace Firebird2Sql
     {
         private readonly Conexao conexaoMgr;
 
+        public int QtdTabelasFb { get; set; }
+        public int QtdTabelasMsSql { get; set; }
+
         public MigradorDados(Conexao conexao)
         {
             conexaoMgr = conexao;
         }
 
-        private void RecuperaFkDasTabelas()
-        {
-            var recuperaTabelasFk = RecuperaForeignKeyTabelasSql();
-            //tvFK.Nodes.Clear();
-            foreach (var tabela in recuperaTabelasFk)
-            {
-                if (tabela.DependenciasList.Any())
-                {
-                    var treeNode = new TreeNode(tabela.Nome);
-                    foreach (var item in tabela.DependenciasList)
-                        treeNode.Nodes.Add(item);
-                    //tvFK.Nodes.Add(treeNode);   
-                }
+        //private void RecuperaFkDasTabelas()
+        //{
+        //    var recuperaTabelasFk = RecuperaForeignKeyTabelasSql();
+        //    //tvFK.Nodes.Clear();
+        //    foreach (var tabela in recuperaTabelasFk)
+        //    {
+        //        if (tabela.DependenciasList.Any())
+        //        {
+        //            var treeNode = new TreeNode(tabela.Nome);
+        //            foreach (var item in tabela.DependenciasList)
+        //                treeNode.Nodes.Add(item);
+        //            //tvFK.Nodes.Add(treeNode);   
+        //        }
 
-            }
-        }
+        //    }
+        //}
 
         public List<string> TabelasFb()
         {
@@ -68,6 +71,7 @@ namespace Firebird2Sql
             {
                 MessageBox.Show(string.Format("FB: " + Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_));
             }
+            QtdTabelasFb = qtdTabelasFb;
             return listaTabelas;
         }
 
@@ -102,13 +106,14 @@ namespace Firebird2Sql
             {
                 MessageBox.Show(string.Format("SqlServer: " + Resources.FrmFirebirdToSql_RecuperaTabelasFB_Conexão_inválida_));
             }
+            QtdTabelasMsSql = qtdTabelasSql;
             return listaTabelas;
         }
 
 
-        public List<Tabela> RecuperaForeignKeyTabelasSql()
+        public List<Tabela> RecuperaForeignKeyTabelasSql(List<string> listaTabelas)
         {
-            var treeNodes = tv.Nodes.Cast<TreeNode>().Where(t => t.Checked);
+            //var treeNodes = tv.Nodes.Cast<TreeNode>().Where(t => t.Checked);
             var connectionStringBuilder = conexaoMgr.ConnectionStringSql;
             var listaFk = new List<Tabela>();
 
@@ -116,23 +121,22 @@ namespace Firebird2Sql
             {
                 conexao.Open();
 
-                foreach (var treeNode in treeNodes)
+                foreach (var tabela in listaTabelas)
                 {
                     using (var sqlQuery = new SqlCommand())
                     {
                         sqlQuery.Connection = conexao;
-                        const string sql = @" SELECT DISTINCT t.name  AS TableWithForeignKey
-                                     FROM   sys.foreign_key_columns AS fk  
-                                            INNER JOIN sys.tables AS t ON fk.parent_object_id = t.object_id  
-                                            INNER JOIN sys.columns AS c ON fk.parent_object_id = c.object_id AND fk.parent_column_id = c.column_id
-                                     WHERE  fk.referenced_object_id = (SELECT object_id FROM   sys.tables WHERE  name = '{0}')                      
-                                     ORDER  BY tablewithforeignkey";
-                        sqlQuery.CommandText = string.Format(sql, treeNode.Text);
+                        const string sql = @"SELECT DISTINCT t.name
+                                             FROM   sys.foreign_key_columns AS fk  
+	                                             INNER JOIN sys.tables AS t ON fk.referenced_object_id = t.object_id  
+                                             WHERE  fk.parent_object_id = (SELECT object_id FROM   sys.tables WHERE  name = @nometabela)";
+                        sqlQuery.CommandText = sql;
+                        sqlQuery.Parameters.AddWithValue("nometabela", tabela);
                         using (SqlDataReader retornoQuery = sqlQuery.ExecuteReader())
                         {
                             var t = new Tabela
                             {
-                                Nome = treeNode.Text,
+                                Nome = tabela,
                                 DependenciasList = new List<string>()
                             };
                             while (retornoQuery.Read())
@@ -148,11 +152,13 @@ namespace Firebird2Sql
 
         }
 
-        public void MigrarDados(TreeView tv)
+        public void MigrarDados(IEnumerable<string> listaTabelasMigrar)
         {
-            var treeNodes = tv.Nodes.Cast<TreeNode>().Where(t => t.Checked);
             var connectStringBuilderFb = conexaoMgr.ConnectionStringFb;
             var connectStringBuilderSql = conexaoMgr.ConnectionStringSql;
+
+            var listaTabelaOrdenadaPorDependencia = OrdenaTabelasPorDepencencia(listaTabelasMigrar.ToList());
+
             using (var conexaoFb = new FbConnection(connectStringBuilderFb))
             {
                 using (var conexaoSql = new SqlConnection(connectStringBuilderSql))
@@ -164,12 +170,12 @@ namespace Firebird2Sql
                     var successo = true;
                     Exception ex = null;
 
-                    foreach (var treeNode in treeNodes)
+                    foreach (var tabela in listaTabelaOrdenadaPorDependencia)
                     {
                         using (var queryFb = new FbCommand())
                         {
                             queryFb.Connection = conexaoFb;
-                            queryFb.CommandText = string.Format("select * from {0}", treeNode.Text);
+                            queryFb.CommandText = string.Format("select * from {0}", tabela);
                             FbDataReader retornoQueryFb = queryFb.ExecuteReader();
 
 
@@ -178,7 +184,7 @@ namespace Firebird2Sql
                                 var parametros = Enumerable.Range(1, retornoQueryFb.FieldCount).Select(i => "@" + i).ToList();
                                 var queryInsertsql = new SqlCommand();
                                 queryInsertsql.Connection = conexaoSql;
-                                queryInsertsql.CommandText = string.Format("insert into {0} values ({1})", treeNode.Text, string.Join(",", parametros));
+                                queryInsertsql.CommandText = string.Format("insert into {0} values ({1})", tabela, string.Join(",", parametros));
 
                                 #region Monta parametros Insert
                                 for (int i = 0; i < parametros.Count; i++)
@@ -192,21 +198,18 @@ namespace Firebird2Sql
                                     else
                                     {
                                         string dataTypeNameSql;
-                                        using (var sqlQuery = new SqlCommand())
-                                        {
-                                            sqlQuery.Connection = conexaoSql;
-                                            sqlQuery.CommandText = string.Format("select * from {0}", treeNode.Text);
-                                            using (var sqlDataReader = sqlQuery.ExecuteReader())
-                                            {
-                                                dataTypeNameSql = sqlDataReader.GetDataTypeName(i);
-                                            }
-                                        }
+                                        using (var sqlQuery = new SqlCommand(string.Format("select * from {0}", tabela), conexaoSql, transacaoSql))
+                                        using (var sqlDataReader = sqlQuery.ExecuteReader())
+                                            dataTypeNameSql = sqlDataReader.GetDataTypeName(i);
 
                                         if (dataTypeNameSql == "image")
                                         {
-                                            var value = retornoQueryFb.GetValue(i) as byte[] ?? null;
+                                            var value = retornoQueryFb.GetValue(i) as byte[];
                                             var sqlParameter = new SqlParameter(parametro, SqlDbType.Image);
-                                            sqlParameter.Value = value;
+                                            if (value != null)
+                                                sqlParameter.Value = value;
+                                            else
+                                                sqlParameter.Value = DBNull.Value;
                                             sqlParameter.IsNullable = true;
                                             queryInsertsql.Parameters.Add(sqlParameter);
                                         }
@@ -248,6 +251,41 @@ namespace Firebird2Sql
                     }
                 }
             }
+        }
+
+        private List<string> OrdenaTabelasPorDepencencia(List<string> todasTabelasParaMigrar)
+        {
+            var listaTabelaOrdenadaPorDependencia = new List<string>();
+            var listaFk = RecuperaForeignKeyTabelasSql(todasTabelasParaMigrar);
+            var existeTabelaNaoAdicionada = true;
+            do
+            {
+                foreach (var tabela in listaFk.OrderBy(t => t.DependenciasList.Count))
+                {
+                    var tabelaJaAdicionada = listaTabelaOrdenadaPorDependencia.Contains(tabela.Nome);
+                    if (tabelaJaAdicionada)
+                        continue;
+
+                    var tabelaNaoPossuiDependencia = !tabela.DependenciasList.Any();
+                    if (tabelaNaoPossuiDependencia)
+                        listaTabelaOrdenadaPorDependencia.Add(tabela.Nome);
+                    else
+                    {
+                        var todasDependenciasForamAdicionadas = tabela.DependenciasList.All(t => todasTabelasParaMigrar.Contains(t));
+                        if (!todasDependenciasForamAdicionadas)
+                        {
+                            var tabelasNaAdicionadas = tabela.DependenciasList.Where(t => !todasTabelasParaMigrar.Contains(t));
+                            throw new DependenciasNaoSatisfeitasException(tabela.Nome, tabelasNaAdicionadas);
+                        }
+
+                        var todasDependenciasSatisfeitas = tabela.DependenciasList.All(t => listaTabelaOrdenadaPorDependencia.Contains(t));
+                        if (todasDependenciasSatisfeitas)
+                            listaTabelaOrdenadaPorDependencia.Add(tabela.Nome);
+                    }
+                }
+                existeTabelaNaoAdicionada = listaTabelaOrdenadaPorDependencia.Any(t => !todasTabelasParaMigrar.Contains(t));
+            } while (existeTabelaNaoAdicionada);
+            return listaTabelaOrdenadaPorDependencia;
         }
     }
 }
