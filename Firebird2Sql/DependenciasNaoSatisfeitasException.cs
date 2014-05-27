@@ -8,7 +8,7 @@ namespace Firebird2Sql
 {
     public class DependenciasNaoSatisfeitasException : Exception
     {
-        const string formato = "Nem todas as dependências da tabela {0} foram selecionadas, tabelas não selecionadas:\n{1}";
+        const string formato = "Nem todas as dependências da tabela {0} foram selecionadas.Tabelas não selecionadas:\n{1}";
         public DependenciasNaoSatisfeitasException(string tabela, IEnumerable<string> dependencias)
             : base(string.Format(formato, tabela, string.Join(", ", dependencias)))
         {

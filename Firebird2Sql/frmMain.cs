@@ -50,7 +50,7 @@ namespace Firebird2Sql
                 }
                 catch (DependenciasNaoSatisfeitasException ex)
                 {
-                    var dialogResult = MessageBox.Show(ex.Message + "\nVocê deseja que elas sejam adicionadas?", "Firebird2Sql", MessageBoxButtons.YesNo);
+                    var dialogResult = MessageBox.Show(ex.Message + "\nDeseja que elas sejam adicionadas?", "Firebird2Sql", MessageBoxButtons.YesNo);
                     if (dialogResult == DialogResult.Yes)
                     {
                         var nodesDeDependencia = todosNodes.Where(t => ex.Dependencias.Any(d => t.Text == d));

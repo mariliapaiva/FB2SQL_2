@@ -224,6 +224,7 @@ namespace Firebird2Sql
                                 {
                                     ex = exception;
                                     successo = false;
+                                    break;
                                 }
 
                             }
