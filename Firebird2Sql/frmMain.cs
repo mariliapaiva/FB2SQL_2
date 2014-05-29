@@ -20,7 +20,7 @@ namespace Firebird2Sql
         public FrmFirebirdToSql()
         {
             InitializeComponent();
-            PreencheParametros();
+            
 
         }
 
@@ -124,6 +124,11 @@ namespace Firebird2Sql
             }
             else
                 MessageBox.Show("Não há tabelas para marcar.");
+        }
+
+        private void FrmFirebirdToSql_Load(object sender, EventArgs e)
+        {
+            PreencheParametros();
         }
 
 

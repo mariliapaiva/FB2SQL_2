@@ -339,6 +339,7 @@
             this.Controls.Add(this.groupBoxFB);
             this.Name = "FrmFirebirdToSql";
             this.Text = "FB2SQL";
+            this.Load += new System.EventHandler(this.FrmFirebirdToSql_Load);
             this.groupBoxFB.ResumeLayout(false);
             this.groupBoxFB.PerformLayout();
             this.groupBox1.ResumeLayout(false);

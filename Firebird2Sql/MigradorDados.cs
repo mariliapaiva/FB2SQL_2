@@ -239,7 +239,7 @@ namespace Firebird2Sql
                     else
                     {
                         transacaoSql.Rollback();
-                        MessageBox.Show(string.Format("Erro na Migração dos Dados: {0}", ex.Message));
+                        MessageBox.Show(string.Format("Erro na Migração dos Dados:\n{0}", ex.Message));
                     }
                 }
             }
