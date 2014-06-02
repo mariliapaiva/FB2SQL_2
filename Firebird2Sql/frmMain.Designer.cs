@@ -56,6 +56,7 @@
             this.lblQtdTabelasSql = new System.Windows.Forms.Label();
             this.lblQtdTabelasFB = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
+            this.pbTabelas = new System.Windows.Forms.ProgressBar();
             this.groupBoxFB.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -268,7 +269,7 @@
             this.tvTabelasCorrepondentes.CheckBoxes = true;
             this.tvTabelasCorrepondentes.Location = new System.Drawing.Point(12, 204);
             this.tvTabelasCorrepondentes.Name = "tvTabelasCorrepondentes";
-            this.tvTabelasCorrepondentes.Size = new System.Drawing.Size(287, 346);
+            this.tvTabelasCorrepondentes.Size = new System.Drawing.Size(287, 275);
             this.tvTabelasCorrepondentes.TabIndex = 11;
             // 
             // bbtMarcarTodos
@@ -286,7 +287,7 @@
             this.groupBox2.Controls.Add(this.lblQtdTabelasSql);
             this.groupBox2.Controls.Add(this.lblQtdTabelasFB);
             this.groupBox2.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.groupBox2.Location = new System.Drawing.Point(305, 472);
+            this.groupBox2.Location = new System.Drawing.Point(301, 401);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(188, 78);
             this.groupBox2.TabIndex = 15;
@@ -324,11 +325,19 @@
             this.label6.TabIndex = 16;
             this.label6.Text = "Lista de Tabelas:";
             // 
+            // pbTabelas
+            // 
+            this.pbTabelas.Location = new System.Drawing.Point(12, 505);
+            this.pbTabelas.Name = "pbTabelas";
+            this.pbTabelas.Size = new System.Drawing.Size(477, 23);
+            this.pbTabelas.TabIndex = 17;
+            // 
             // FrmFirebirdToSql
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(573, 562);
+            this.Controls.Add(this.pbTabelas);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.bbtMarcarTodos);
@@ -381,6 +390,7 @@
         public System.Windows.Forms.Label lblQtdTabelasSql;
         public System.Windows.Forms.Label lblQtdTabelasFB;
         public System.Windows.Forms.Label label6;
+        private System.Windows.Forms.ProgressBar pbTabelas;
     }
 }
 

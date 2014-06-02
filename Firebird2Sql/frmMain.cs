@@ -8,6 +8,7 @@ using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -20,20 +21,22 @@ namespace Firebird2Sql
         public FrmFirebirdToSql()
         {
             InitializeComponent();
-            
-
         }
 
+        private void FrmFirebirdToSql_Load(object sender, EventArgs e)
+        {
+            PreencheParametros();
+        }
 
         private void PreencheParametros()
         {
             textBoxUsu.Text = "SYSDBA";
             textBoxSenha.Text = "masterkey";
-            textBoxDatabase.Text = @"C:\Marilia\Dados\CARGAS32.GDB";
+            textBoxDatabase.Text = @"C:\Marilia\Dados\CARGAS32_63.GDB";
             textBoxIP.Text = "127.0.0.1";
             textBoxPorta.Text = "3050";
             //sqlserver
-            txtDatabaseSql.Text = "cargas";
+            txtDatabaseSql.Text = "Cargas32";
             txtServerSql.Text = "(LocalDb)\\v11.0"; //".\\SqlExpress"; //
         }
 
@@ -46,7 +49,19 @@ namespace Firebird2Sql
             {
                 try
                 {
-                    migradorDados.MigrarDados(treeNodes.Select(treeNode => treeNode.Text));
+                    pbTabelas.Value = 0;
+                    migradorDados.QuandoInserirRegistro += () =>
+                    {
+                        Action atualizaProgresso = () =>
+                        {
+                            pbTabelas.Maximum = migradorDados.TotalDeRegistros;
+                            if (pbTabelas.Value + 1 < migradorDados.TotalDeRegistros)
+                                pbTabelas.Value++;
+                        };
+                        pbTabelas.Invoke(atualizaProgresso);
+
+                    };
+                    ThreadPool.QueueUserWorkItem(a => migradorDados.MigrarDados(treeNodes.Select(treeNode => treeNode.Text)));
                 }
                 catch (DependenciasNaoSatisfeitasException ex)
                 {
@@ -124,11 +139,6 @@ namespace Firebird2Sql
             }
             else
                 MessageBox.Show("Não há tabelas para marcar.");
-        }
-
-        private void FrmFirebirdToSql_Load(object sender, EventArgs e)
-        {
-            PreencheParametros();
         }
 
 

@@ -17,6 +17,11 @@ namespace Firebird2Sql
 
         public int QtdTabelasFb { get; set; }
         public int QtdTabelasMsSql { get; set; }
+        public int TotalDeRegistros { get; private set; }
+
+        public delegate void PadraoDosEventos();
+
+        public event PadraoDosEventos QuandoInserirRegistro;
 
         public MigradorDados(Conexao conexao)
         {
@@ -147,7 +152,7 @@ namespace Firebird2Sql
         {
             var connectStringBuilderFb = conexaoMgr.ConnectionStringFb;
             var connectStringBuilderSql = conexaoMgr.ConnectionStringSql;
-
+            var nomeDaTabela = "";
             var listaTabelaOrdenadaPorDependencia = OrdenaTabelasPorDepencencia(listaTabelasMigrar.ToList());
 
             using (var conexaoFb = new FbConnection(connectStringBuilderFb))
@@ -161,8 +166,21 @@ namespace Firebird2Sql
                     var successo = true;
                     Exception ex = null;
 
-                    foreach (var tabela in listaTabelaOrdenadaPorDependencia)
+                    TotalDeRegistros = listaTabelaOrdenadaPorDependencia
+                       .Select(x => string.Format("select Count(*) from {0}", x))
+                       .Select(selectCount => new FbCommand(selectCount, conexaoFb))
+                       .Select(querySelectCountFb => (int)querySelectCountFb.ExecuteScalar())
+                       .Sum();
+
+                    foreach (string tabela in listaTabelaOrdenadaPorDependencia)
                     {
+                        nomeDaTabela = tabela;
+                        var querysql = new SqlCommand(string.Format(@"select count (c.name) from sys.tables t
+                                                                    inner join sys.columns c on c.object_id = t.object_id
+                                                                    where c.is_identity = 1 and t.name = '{0}'", tabela), conexaoSql, transacaoSql);
+                        var qtdIdentity = querysql.ExecuteScalar();
+                        LigaIndentityTabela(conexaoSql, transacaoSql, tabela, qtdIdentity);
+
                         using (var queryFb = new FbCommand())
                         {
                             queryFb.Connection = conexaoFb;
@@ -172,7 +190,7 @@ namespace Firebird2Sql
 
                             while (retornoQueryFb.Read())
                             {
-                                var parametros = Enumerable.Range(1, retornoQueryFb.FieldCount).Select(i => "@" + i).ToList();
+                                var parametros = Enumerable.Range(0, retornoQueryFb.FieldCount).Select(i => "@" + retornoQueryFb.GetName(i)).ToList();
                                 var queryInsertsql = new SqlCommand();
                                 queryInsertsql.Connection = conexaoSql;
                                 queryInsertsql.CommandText = string.Format("insert into {0} values ({1})", tabela, string.Join(",", parametros));
@@ -219,6 +237,11 @@ namespace Firebird2Sql
                                 {
                                     queryInsertsql.Transaction = transacaoSql;
                                     queryInsertsql.ExecuteNonQuery();
+                                    if (QuandoInserirRegistro != null)
+                                    {
+                                        QuandoInserirRegistro();
+                                    }
+
                                 }
                                 catch (Exception exception)
                                 {
@@ -228,6 +251,13 @@ namespace Firebird2Sql
                                 }
 
                             }
+                            if (!successo)
+                            {
+                                break;
+                            }
+
+                            DesligaIndentityTabela(conexaoSql,transacaoSql, tabela, qtdIdentity);
+
                         }
                     }
 
@@ -239,9 +269,26 @@ namespace Firebird2Sql
                     else
                     {
                         transacaoSql.Rollback();
-                        MessageBox.Show(string.Format("Erro na Migração dos Dados:\n{0}", ex.Message));
+                        MessageBox.Show(string.Format("Erro na Migração dos Dados:\n{0}\nTabela: {1}", ex.Message, nomeDaTabela));
                     }
                 }
+            }
+        }
+
+        private static void LigaIndentityTabela(SqlConnection conexaoSql, SqlTransaction transacaoSql, string tabela, object qtdIdentity)
+        {
+            AlteraIndentityTabela(conexaoSql, transacaoSql,tabela, true, qtdIdentity);
+        }
+        private static void DesligaIndentityTabela(SqlConnection conexaoSql, SqlTransaction transacaoSql, string tabela, object qtdIdentity)
+        {
+            AlteraIndentityTabela(conexaoSql, transacaoSql, tabela, false, qtdIdentity);
+        }
+        private static void AlteraIndentityTabela(SqlConnection conexaoSql, SqlTransaction transacaoSql, string tabela, bool onoff, object qtdIdentity)
+        {
+            if ((int)qtdIdentity > 0)
+            {
+                var querysql2 = new SqlCommand(string.Format("set identity_insert {0} {1} ", tabela, onoff ? "on" : "off"), conexaoSql, transacaoSql);
+                querysql2.ExecuteNonQuery();
             }
         }
 
@@ -279,5 +326,6 @@ namespace Firebird2Sql
             } while (existeTabelaNaoAdicionada);
             return listaTabelaOrdenadaPorDependencia;
         }
+
     }
 }
